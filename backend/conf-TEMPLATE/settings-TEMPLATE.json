@@ -1,0 +1,14 @@
+{
+                     "raw_data_folder_path":"",
+                   "model_data_folder_path":"",
+                  "model_state_file_prefix":"",
+            "model_forecasts_file_modelids":["",
+                                             ""],
+            "model_forecasts_file_prefixes":["", 
+                                             ""],
+                              "max_link_id":-1,
+           "observed_stages_webservice_url":"",
+           "observed_stages_webservice_div":"|",
+  "observed_stages_webservice_ifisid_index":-1,
+   "observed_stages_webservice_stage_index":-1
+}

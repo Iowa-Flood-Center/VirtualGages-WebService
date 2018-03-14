@@ -32,10 +32,19 @@ $ git remote add -f origin https://github.com/.../VirtualGages-WebService.git
 ```
 
 Activate sparse checkout and limit the versioned content to the *backend* directory:
+
 ```
 $ git config core.sparseCheckout true
 $ echo 'backend/' > .git/info/sparse-checkout
 ```
+
+Retrieve the content from the server:
+
+```
+$ git pull origin master
+```
+
+**Note**: Due to the simplicity of this project, only the master branch is being used.
 
 ### Setting up configuration files
 
