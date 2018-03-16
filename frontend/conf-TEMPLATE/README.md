@@ -1,4 +1,4 @@
-# Settings Files (templates)
+# Frontend - Settings Files (templates)
 
 All files in this folder are just templates that need to be copied to the ```conf```, renamed in order to remove the "*-TEMPLATE*" suffix and have the internal fields properly set up.
 
