@@ -1,0 +1,35 @@
+#!/bin/bash
+
+call_and_log() {
+
+  # get arguments
+  CALL_CMD=$1
+  NAME_CMD=$2
+  LOGS_DIR=$3
+
+  # set up log file paths
+  LOG_FILEPATH_STD_NOW=${LOGS_DIR}${NAME_CMD}_o.txt
+  LOG_FILEPATH_STD_LST=${LOGS_DIR}${NAME_CMD}_o_last.txt
+  LOG_FILEPATH_ERR_NOW=${LOGS_DIR}${NAME_CMD}_e.txt
+  LOG_FILEPATH_ERR_LST=${LOGS_DIR}${NAME_CMD}_e_last.txt
+
+  # remove old files if they exist
+  if [ -f $LOG_FILEPATH_STD_LST ]; then
+    rm $LOG_FILEPATH_STD_LST
+  fi
+  if [ -f $LOG_FILEPATH_ERR_LST ]; then
+    rm $LOG_FILEPATH_ERR_LST
+  fi
+
+  # make the most recent ones the last ones
+  if [ -f $LOG_FILEPATH_STD_NOW ]; then
+    mv $LOG_FILEPATH_STD_NOW $LOG_FILEPATH_STD_LST
+  fi
+  if [ -f $LOG_FILEPATH_ERR_NOW ]; then
+    mv $LOG_FILEPATH_ERR_NOW $LOG_FILEPATH_ERR_LST
+  fi
+
+  # call script
+  CALL_CMD_FULL="${CALL_CMD} 1> ${LOG_FILEPATH_STD_NOW} 2> ${LOG_FILEPATH_ERR_NOW}"
+  eval $CALL_CMD_FULL
+}

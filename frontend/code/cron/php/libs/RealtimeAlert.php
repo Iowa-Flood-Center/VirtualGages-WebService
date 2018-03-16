@@ -3,12 +3,14 @@
   use PHPMailer\PHPMailer\PHPMailer;
   use PHPMailer\PHPMailer\Exception;
 
-  require 'PHPMailer/Exception.php';
-  require 'PHPMailer/PHPMailer.php';
-  require 'PHPMailer/SMTP.php';
+  require_once("PHPMailer/Exception.php");
+  require_once("PHPMailer/PHPMailer.php");
+  require_once("PHPMailer/SMTP.php");
+  require_once("libs/Settings.php");
+  require_once("libs/WebServiceReader.php");
 
   class RealtimeAlert{
-    
+
     private static $users_threshold = NULL;
     
     /**
@@ -24,7 +26,7 @@
       // check all forecasts
       $all_models = Settings::get("forecast_models");
       foreach($all_models as $cur_model){
-        RealtimeAlert::check_forecast($cur_model);
+        RealtimeAlert::check_forecast($now_timestamp, $cur_model);
       }
     }
     
@@ -33,13 +35,9 @@
      * RETURN: none.
      */
     private static function check_state($now_timestamp){
-      echo("Loaded ok\n");
       echo("# ### STATE ################################### #".PHP_EOL);
-      $last_timestamp = WebServiceReader::get_last_state_timestamp();
-      
-      RealtimeAlert::evaluate_time(NULL, 
-                                   $last_timestamp, 
-                                   $now_timestamp);
+      $l_t = WebServiceReader::get_last_state_timestamp();
+      RealtimeAlert::evaluate_time(NULL, $l_t, $now_timestamp);
     }
 
     /**
@@ -47,8 +45,10 @@
      * $model_id:
      * RETURN: none.
      */
-    private static function check_forecast($model_id){
+    private static function check_forecast($now_timestamp, $model_id){
       echo("# ### FORECAST : ".$model_id." ################ #".PHP_EOL);
+      $f_t = WebServiceReader::get_first_forecast_timestamp($model_id);
+      RealtimeAlert::evaluate_time($model_id, $f_t, $now_timestamp);
     }
     
     /**
@@ -62,11 +62,16 @@
                                           $ref_timestamp,
                                           $now_timestamp){
 
-      // get delta time and basic check it
+      // get delta time
       $delta_time = ($now_timestamp - $ref_timestamp)/60;   # in minutes
+      echo("Delta time: ".$delta_time.PHP_EOL);
       
+      // define color
       $color_idx = RealtimeAlert::define_color($delta_time);
       $color_lbl = Settings::get("alerts_labels")[$color_idx];
+      echo("Situation: ".$color_lbl.PHP_EOL);
+      
+      // contact everyone
       $all_contacted = RealtimeAlert::get_contacted($color_idx);
       foreach($all_contacted as $cur_contacted){
           RealtimeAlert::communicate($model_id, $delta_time, 
@@ -161,7 +166,7 @@
       $mail = new PHPMailer(true);
       try {
         //Server settings
-        $mail->SMTPDebug = 2;
+        $mail->SMTPDebug = 0;
         $mail->isSMTP();
         $mail->Host = 'smtp.gmail.com';
         $mail->SMTPAuth = true;
@@ -182,6 +187,7 @@
         $mail->AltBody = $message_altn;
 
         $mail->send();
+        echo("Sent mail to ".$contact.PHP_EOL);
         return(true);
       } catch (Exception $e) {
         echo 'Message could not be sent. Mailer Error: ', $mail->ErrorInfo;

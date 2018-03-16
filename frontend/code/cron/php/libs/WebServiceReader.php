@@ -8,7 +8,7 @@
 
     /**
      * Load URL if needed, retrive data, parse it, get max timestamp
-     * RETURN: Integer if retrived any data, NULL otherwise.
+     * RETURN: Integer if retrived any data, NULL otherwise
      */
     public function get_last_state_timestamp(){
       if(is_null(WebServiceReader::$url_state))
@@ -19,12 +19,16 @@
     }
     
     /**
-     * 
-     * $model_id:
-     * RETURN: Integer if retrived any data, NULL otherwise.
+     * Load URL if needed, retrive data, parse it, get min timestamp
+     * $model_id: forecast model id
+     * RETURN: Integer if retrived any data, NULL otherwise
      */
     public function get_first_forecast_timestamp($model_id){
-      
+      if(is_null(WebServiceReader::$url_forecast_frame))
+        WebServiceReader::read_settings();
+      $raw_data = WebServiceReader::retrieve_raw_data($model_id);
+      $all_timestamps = WebServiceReader::get_timeseries($raw_data);
+      return(is_null($all_timestamps) ? NULL : min($all_timestamps));
 	}
 
     /**
@@ -43,11 +47,11 @@
 	 * RETURN: String.
 	 */
 	private function retrieve_raw_data($model_id){
-      if(is_null($model_id)){
+      if(is_null($model_id))
         $url = WebServiceReader::$url_state;
-      } else {
+      else
         $url = WebServiceReader::$url_forecast_frame.$model_id;
-      }
+      echo("Acessing:".$url.PHP_EOL);
       return(file_get_contents($url));
 	}
 	
@@ -57,17 +61,23 @@
 	 * RETURN: Integer if retrived any data, NULL otherwise.
 	 */
 	private function get_timeseries($ws_raw_data){
-	  // basic check - not null, not empty
-      if (is_null($ws_raw_data) || (strlen($ws_raw_data)==0)){
+	  // basic check - not null
+      if (is_null($ws_raw_data)){
         echo("Web service return is null.".PHP_EOL);
         return(NULL);
-      } else {
-        echo("Parsing ".strlen($ws_raw_data)." charaters.".PHP_EOL);
+      }
+      
+      // basi check - not empty
+      $num_chars = strlen($ws_raw_data);
+      if ($num_chars==0){
+        echo("Web service return is empty.".PHP_EOL);
+        return(NULL);
       }
 	  
 	  // split it
 	  $all_lines = explode(PHP_EOL, $ws_raw_data);
-	  echo("Processing ".sizeof($all_lines)." lines.".PHP_EOL);
+	  echo("Processing ".$num_chars." characters in ");
+	  echo(sizeof($all_lines)." lines.".PHP_EOL);
 	  
       // extract column
       $all_timestamps = array();

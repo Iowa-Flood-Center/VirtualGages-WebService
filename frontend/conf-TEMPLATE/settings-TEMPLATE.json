@@ -11,7 +11,6 @@
            "smtp_host":"",
            "smtp_port":"",
          "server_name":"",
-      "smtp_from_host":"",
       "smtp_from_mail":"",
       "smtp_from_name":"",
       "smtp_from_pass":""
