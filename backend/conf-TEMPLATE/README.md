@@ -50,3 +50,50 @@ Fields:
  - Description: Index of the *stage depth* column in the Web Service retrieved data
  - Format: Integer
  - Example: 1
+
+## settings-database-TEMPLATE.json
+
+Fields:
+
+- **db_host**
+  - Description: Address of the computer hosting a PostGreSQL database that contains the rating curves of the virtual gages
+  - Format: String
+  - Example: "s-iihr123.(...).edu"
+- **db_port**
+  - Description: Port used for connecting to the PostGreSQL database
+  - Format: String
+  - Example: "5432"
+- **db_name**
+  - Description: Name of the PostGreSQL database that contains the rating curves of the virtual gages
+  - Format: String
+  - Example: "all\_rating\_curves"
+- **db_user**
+  - Description: Username to connect to the PostGreSQL database that contains the rating curves of the virtual gages
+  - Format: String
+  - Example: "automated\_user"
+- **db_pass**
+  - Description: Password of the database user defined in *Username* to connect to the PostGreSQL database that contains the rating curves of the virtual gages
+  - Format: String
+  - Example: "p@$$w0Rd"
+- **db_rc_query**
+  - Description: *SQL select* query for retriving the rating curves data of the virtual gages from the database(\*)
+  - Format: String
+  - Example: "SELECT obj\_id, stage, discharge, link\_id FROM vitrgage\_ratingcurve"
+
+
+** Note(\*): ** The expected format of retrieved rating curves has the following sorted collumns:
+- pois\_id (integer, unique identifier of the virtual gage)
+- stage (float, stage [in feet] of a mark in the rating curve)
+- discharge (float, discharge [in m^3/s] of a mark in the rating curve)
+- link\_id (integer, unique identifier of the link to which the virtual gages is associated)
+
+Example:
+
+| obj\_id | stage | discharge | link\_id |
+| ------- | ----- | --------- | -------- |
+|   ...   |  ...  |    ...    |   ...    |
+|  2006   | 644.6 |  5669.77  |  819902  |
+|  2006   | 644.8 |  6791.01  |  819902  |
+|  2007   | 927.4 |     0.00  |  350352  |
+|  2007   | 929.2 |    50.00  |  350352  |
+|   ...   |  ...  |    ...    |   ...    |

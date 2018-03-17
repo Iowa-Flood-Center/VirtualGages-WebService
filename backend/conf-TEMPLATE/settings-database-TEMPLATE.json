@@ -1,0 +1,8 @@
+{
+      "db_host":"s-iihr.(...).edu",
+      "db_port":"5432",
+      "db_name":"",
+      "db_user":"",
+      "db_pass":"",
+  "db_rc_query":"SELECT (...) FROM (...)"
+}
