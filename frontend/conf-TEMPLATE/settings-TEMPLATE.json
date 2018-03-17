@@ -1,0 +1,17 @@
+{
+           "url_state":"",
+  "url_forecast_frame":"",
+     "timestamp_index":-1,
+   "vg_webservice_div":",",
+     "forecast_models":["", ""],
+      "alerts_minutes":[  0,       2,       150,      240,   480,        1000],
+       "alerts_labels":["green", "yellow", "orange", "red", "dark_red", "red_as_hell"],
+           "receivers":{"":"green",
+                        "":"yellow"},
+           "smtp_host":"",
+           "smtp_port":"",
+         "server_name":"",
+      "smtp_from_mail":"",
+      "smtp_from_name":"",
+      "smtp_from_pass":""
+}
