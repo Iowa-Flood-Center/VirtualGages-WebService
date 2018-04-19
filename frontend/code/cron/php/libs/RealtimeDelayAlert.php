@@ -7,6 +7,7 @@
   require_once("PHPMailer/PHPMailer.php");
   require_once("PHPMailer/SMTP.php");
   require_once("libs/Settings.php");
+  require_once("libs/SettingsAlertsDelays.php");
   require_once("libs/WebServiceReader.php");
 
   class RealtimeAlert{
@@ -88,13 +89,13 @@
       if ($delta_time < 0) return(0);
       
       // get time thresholds and check it
-      $alert_min = Settings::get("alerts_minutes");
+      $alert_min = SettingsAlertsDelays::get("alerts_minutes");
       if (is_null($alert_min)){
         echo("No attribute 'alerts_minutes' in settings file.".PHP_EOL);
-        quit(1);
+        exit(1);
       } elseif (!is_array($alert_min)) {
         echo("Attribute 'alerts_minutes' is not and array.".PHP_EOL);
-        quit(1);
+        exit(1);
       }
       
       // find current color
@@ -131,8 +132,8 @@
      */
     private static function set_users_thresholds(){
       $dict = array();
-      $all_colors = Settings::get("alerts_labels");
-      foreach(Settings::get("receivers") as $mail=>$color){
+      $all_colors = SettingsAlertsDelays::get("alerts_labels");
+      foreach(SettingsAlertsDelays::get("receivers") as $mail=>$color){
         $color_idx = array_search($color, $all_colors);
         $dict[$mail] = $color_idx;
       }
@@ -150,12 +151,12 @@
       
       // define variables
       $dt = intval($delta_time);
-      $from_mail = Settings::get("smtp_from_mail");
-      $from_name = Settings::get("smtp_from_name");
+      $from_mail = SettingsAlertsDelays::get("smtp_from_mail");
+      $from_name = SettingsAlertsDelays::get("smtp_from_name");
       $model_label = (is_null($model_id) ? "state": $model_id);
       
       // define title and message
-      $title = Settings::get("smtp_from_name").": ";
+      $title = SettingsAlertsDelays::get("smtp_from_name").": ";
       $title .= strtoupper($color_label);
       $title .= " level alert for ".$model_label;
       $message_html = "Model <strong>".$model_label."</strong> is ";
@@ -171,7 +172,7 @@
         $mail->Host = 'smtp.gmail.com';
         $mail->SMTPAuth = true;
         $mail->Username = $from_mail;
-        $mail->Password = Settings::get("smtp_from_pass");
+        $mail->Password = SettingsAlertsDelays::get("smtp_from_pass");
         $mail->SMTPSecure = 'tls';
         $mail->Port = 587;
 

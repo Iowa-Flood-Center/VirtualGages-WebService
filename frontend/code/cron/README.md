@@ -6,4 +6,5 @@ Suppose this *cron* folder has the absolute path ```[ABS]/cron/```. An example o
 
 
     ## VIRTUAL GAGES WEB SERVICE CHECKER
-    15 * * * * bash [ABS]/cron/bash/realtime_alerts_and_log.sh
+    15 * * * * bash [ABS]/cron/bash/delay_alerts_and_log.sh
+    25 1 * * * bash [ABS]/cron/bash/flood_alerts_and_log.sh

@@ -82,7 +82,7 @@
      * $disch_value :
      * RETURN :
      */
-    function define_stage_flag($sub_threshold_dict, $stage_value){
+    public static function define_stage_flag($sub_threshold_dict, $stage_value){
       if ($sub_threshold_dict["action"] > 0){
         $temp_action = $sub_threshold_dict["action"];
       } else {
