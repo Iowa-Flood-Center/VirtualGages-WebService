@@ -1,6 +1,6 @@
 <?php
   
-  require_once("libs/RealtimeAlert.php");
+  require_once("libs/RealtimeDelayAlert.php");
   
   RealtimeAlert::check_all_models();
   

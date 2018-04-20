@@ -10,8 +10,8 @@ source "libs/json.shlib"
 JSON.load "$(< ../../../conf/settings.json)" settings_data
 
 # define variables
-CALL_CMD="php realtime_alerts.php"
-NAME_CMD="realtime_alerts"
+CALL_CMD="php realtime_delay_alerts.php"
+NAME_CMD="realtime_delay_alerts"
 LOGS_DIR=$(JSON.get /raw_data_folder_path settings_data | tr -d \")"logs/"
 
 # ############################### CALL ############################### #

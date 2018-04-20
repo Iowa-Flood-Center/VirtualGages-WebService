@@ -37,8 +37,8 @@
   echo("\n");
   
   // define paths
-  $forecast_folder_path = Settings::get("input_folder_path")."forecast/";
-  $realtime_folder_path = Settings::get("input_folder_path")."ws_realtime_summary/";
+  $forecast_folder_path = Settings::get("input_folder_path")."forecast_last/";
+  $realtime_folder_path = Settings::get("input_folder_path")."realtime_history/";
   $thresholds_file_path = Settings::get("raw_data_folder_path")."/anci/dot_floodthresholds.json";
 
   // show last 10 days
