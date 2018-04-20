@@ -1,5 +1,6 @@
 from libs.classes.FileSystemDefinitions import FileSystemDefinitions
-import libs.json_state_generator_libs as libs
+import libs.json_state_generator_lib as libs
+from libs.classes.Debug import Debug
 import sys
 
 the_timestamp = None
@@ -15,7 +16,7 @@ if '-h' in sys.argv:
 try:
     the_timestamp = int(sys.argv[1]) if len(sys.argv) > 1 else None
 except ValueError:
-    print("json_state_generator_libs: Provided timestamp ({0}) is not an integer.".format(sys.argv[1]))
+    Debug.dl("json_state_generator: Provided timestamp ({0}) is not an integer.".format(sys.argv[1]), debug_level, 1)
     quit()
 
 # ####################################################### CALL ####################################################### #
@@ -28,7 +29,7 @@ else:
 
 # process for such best timestamp
 if best_timestamp is None:
-    print("json_state_generator_libs: Unable to define a proper timestamp.")
+    Debug.dl("json_state_generator: Unable to define a proper timestamp.", debug_level, 1)
 else:
     file_raw_content = libs.read_filesystem(the_timestamp=best_timestamp)
     disch_stage_dict = libs.convert_dist_to_stage(file_raw_content)

@@ -1,5 +1,5 @@
 from classes.FileSystemDefinitions import FileSystemDefinitions
-from scipy.interpolate import interp1d
+from classes.RatingCurve import RatingCurve
 from classes.Settings import Settings
 from classes.Debug import Debug
 import numpy as np
@@ -38,25 +38,6 @@ def read_filesystem(the_timestamp=None):
     return vect_iq
 
 
-def get_stage(all_rcs, link_id, discharge):
-    """
-
-    :param all_rcs: Dictionary object directly read from JSON file
-    :param link_id: String - Link_id
-    :param discharge: Double value
-    :return: Double value related to conversion if possible to interpolate, None otherwise.
-    """
-
-    link_dict = all_rcs['all_rcs'][link_id]
-    all_disch = link_dict["discharge"]
-    all_stage = link_dict["stage"]
-
-    converter_func = interp1d(all_disch, all_stage, kind='cubic')
-    stage = float(converter_func(discharge))
-
-    return stage
-
-
 def convert_dist_to_stage(all_disc_records_vect):
     """
     Converts all possible discharges into stages (restriction: available DOT rating curves at ancillary file)
@@ -73,16 +54,12 @@ def convert_dist_to_stage(all_disc_records_vect):
         if cur_discharge > 0:
             cur_str_linkid = str(cur_linkid)
             if cur_str_linkid in rcs_dict['all_rcs'].keys():
-                # return_dict[rcs_dict['all_rcs'][cur_str_linkid]['ifis_id']] = cur_discharge
+                cur_disc = cur_discharge * 35.3147  # disc from cms to cfs
                 cur_sub_dict = {
-                    "stage": format(get_stage(rcs_dict, cur_str_linkid, cur_discharge * 35.3147), '.2f'),  # disc from cms to cfs
+                    "stage": format(RatingCurve.get_stage(rcs_dict, cur_str_linkid, cur_disc), '.2f'),
                     "discharge": cur_discharge,
                     "link_id": int(cur_str_linkid)
                 }
-                if cur_sub_dict["link_id"] in (174456, 108498):
-                    print("json_state_generator_libs: For link {0}, convert from {1} cfs to {2} ft.".format(
-                        cur_sub_dict["link_id"], cur_sub_dict["discharge"], cur_sub_dict["stage"]))
-                    print("                            key: {0}".format(rcs_dict['all_rcs'][cur_str_linkid]['ifis_id']))
                 return_dict[rcs_dict['all_rcs'][cur_str_linkid]['ifis_id']] = cur_sub_dict
 
     return return_dict
@@ -156,7 +133,7 @@ def write_file(all_stage_records_dict, the_timestamp=None, debug_lvl=0):
     # write file
     with open(the_file_path, "w+") as dest_file:
         json.dump(all_stage_records_dict, dest_file)
-        print("json_state_generator_libs: Wrote '{0}'.".format(the_file_path))
-        print("                             keys: '{0}'.".format(all_stage_records_dict.keys()))
+        Debug.dl("json_state_generator_lib: Wrote '{0}'.".format(the_file_path), 1, debug_lvl)
+        Debug.dl("                             keys: '{0}'.".format(all_stage_records_dict.keys()), 1, debug_lvl)
 
     return None

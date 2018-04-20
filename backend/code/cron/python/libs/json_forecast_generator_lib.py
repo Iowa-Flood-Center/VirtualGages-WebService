@@ -1,5 +1,6 @@
 from libs.classes.FileSystemDefinitions import FileSystemDefinitions
-from scipy.interpolate import interp1d
+# from scipy.interpolate import interp1d
+from classes.RatingCurve import RatingCurve
 from classes.Settings import Settings
 from classes.Debug import Debug
 import numpy as np
@@ -36,25 +37,6 @@ def read_h5file_content(hdf5_file_path, debug_lvl=0):
     return hdf_data, file_timestamp
 
 
-def get_stage(all_rcs, link_id, discharge):
-    """
-
-    :param all_rcs: Dictionary object directly read from JSON file
-    :param link_id: String - Link_id
-    :param discharge: Double value
-    :return: Double value related to conversion if possible to interpolate, None otherwise.
-    """
-
-    link_dict = all_rcs['all_rcs'][link_id]
-    all_disch = link_dict["discharge"]
-    all_stage = link_dict["stage"]
-
-    converter_func = interp1d(all_disch, all_stage, kind='cubic')
-    stage = float(converter_func(discharge))
-
-    return stage
-
-
 def convert_dist_to_stage(all_disc_records_vect, the_timestamp, debug_lvl=0):
     """
     Converts all possible discharges into stages (restriction: available DOT rating curves at ancillary file)
@@ -82,7 +64,7 @@ def convert_dist_to_stage(all_disc_records_vect, the_timestamp, debug_lvl=0):
             cur_timestamp = int(the_timestamp + (cur_disc_records_vect[1] * 60))
             cur_discharge = cur_disc_records_vect[2] * 35.3147  # converting from cms to cfs
 
-            raw_stg = get_stage(rcs_dict, cur_str_linkid, cur_discharge)
+            raw_stg = RatingCurve.get_stage(rcs_dict, cur_str_linkid, cur_discharge)
             cur_sub_dict = {
                 "stage": format(raw_stg, '.2f'),
                 "discharge": format(cur_discharge, '.4f'),

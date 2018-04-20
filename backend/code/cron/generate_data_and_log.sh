@@ -1,4 +1,4 @@
- #!/bin/bash
+#!/bin/bash
 
 # head to the file directory
 cd "$(dirname "$0")"
