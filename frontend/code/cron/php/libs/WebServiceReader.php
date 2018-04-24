@@ -34,6 +34,18 @@
       $all_timestamps = WebServiceReader::get_timeseries($raw_data);
       return(is_null($all_timestamps) ? NULL : min($all_timestamps));
     }
+
+    /**
+	 *
+	 * $model_id:
+	 * RETURN:
+	 */
+    public function get_past_peaks(){
+      if(is_null(WebServiceReader::$url_state))
+        WebServiceReader::read_settings();
+      $raw_data = WebServiceReader::retrieve_raw_data(NULL);
+	  return(WebServiceReader::get_peaks($raw_data));
+    }
 	
     /**
      * 
