@@ -23,8 +23,6 @@
       // read and parse file
       $file_text = file_get_contents(Settings::get("sites_file_path"));
       static::$file_content = explode("\n", $file_text);
-	  
-	  echo("Got '".count(static::$file_content)."' lines from '".Settings::get("sites_file_path")."'.\n");
       
       // basic check
       if(is_null(static::$file_content)){
