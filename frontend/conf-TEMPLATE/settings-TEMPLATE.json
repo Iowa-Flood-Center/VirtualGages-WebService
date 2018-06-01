@@ -8,6 +8,7 @@
          "waterelev_index":-1,
          "discharge_index":-1,
              "alert_index":-1,
+              "flag_index":6,
        "vg_webservice_div":",",
 	     "sites_file_path":"",
 "sites_file_ifis_id_index":-1,

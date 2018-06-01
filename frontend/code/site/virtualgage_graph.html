@@ -1,0 +1,18 @@
+
+
+<html>
+  <head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+	<script type="text/javascript" src="third_party/jquery-3.2.1.min.js"></script>
+	<script type="text/javascript" src="scripts/virtualgages.util.js"></script>
+	<script>
+	  "use strict";
+	  
+	  google.charts.load('current', {'packages':['annotationchart']});
+      google.charts.setOnLoadCallback(virtualgages.util.load_and_plot);
+	</script>
+  </head>
+  <body>
+    <div id='plot' style='width:95%; height:95%'></div>
+  </body>
+</html>

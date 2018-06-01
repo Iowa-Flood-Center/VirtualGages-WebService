@@ -1,17 +1,12 @@
 <?php
-
-  use PHPMailer\PHPMailer\PHPMailer;
-  use PHPMailer\PHPMailer\Exception;
   
   date_default_timezone_set('America/Chicago');
   
-  require_once("PHPMailer/Exception.php");
-  require_once("PHPMailer/PHPMailer.php");
-  require_once("PHPMailer/SMTP.php");
   require_once("libs/Settings.php");
   require_once("libs/SettingsAlertsFloods.php");
   require_once("libs/WebServiceReader.php");
   require_once("libs/SitesDescriptionCSVReader.php");
+  require_once("libs/MailSender.php");
   
   class RealtimeFloodAlert{
     
@@ -21,19 +16,12 @@
      * Check all defined models and alert all users (past/forecast)
      * RETURN: none
      */
-    public function check_all_models_past_fore(){
+    public function alert_past_floods(){
         
       $thresholds_dct = RealtimeFloodAlert::load_thresholds();
       
       // check current state
       RealtimeFloodAlert::check_past($thresholds_dct);
-      
-      // check all forecasts
-      $all_models = Settings::get("forecast_models");
-      foreach($all_models as $cur_model){
-        echo("Checking forecast for: ".$cur_model."\n");
-        RealtimeFloodAlert::check_forecast($thresholds_dct, $cur_model);
-      }
     }
 
     /**
@@ -43,8 +31,8 @@
     public function check_all_models_state_fore(){
       // check all forecasts
       $all_models = Settings::get("forecast_models");
-      $all_alerted_models = SettingsAlertsFloods::get("alert_floods");
-      $all_alerted_models = array_keys($all_alerted_models["forecast"]);
+      $all_alerted_models = SettingsAlertsFloods::get("alert_state_fore");
+      $all_alerted_models = array_keys($all_alerted_models);
       $fore_models = array_intersect ($all_models, $all_alerted_models);
       foreach($fore_models as $cur_model){
         echo("Checking forecast for: ".$cur_model.PHP_EOL);
@@ -84,11 +72,12 @@
         }
         
         // 1- get receivers for this level
-        $receivers = RealtimeFloodAlert::get_contacted($level, NULL);
+        $receivers = RealtimeFloodAlert::get_contacted_state_fore($level, $model_id);
         if(count($receivers) <= 0){
-          echo(" No receivers for level ".$level.PHP_EOL);
+          echo(" Skipping. No receivers for this level.".PHP_EOL);
           continue;
         }
+		echo(" Receivers for ".$level.", ".$model_id.": ".json_encode($receivers).PHP_EOL);
       
         // 2- create message
         $msg = RealtimeFloodAlert::create_state_fore_message(
@@ -99,7 +88,8 @@
           continue;
       
         // 4- send created message for all receivers
-        RealtimeFloodAlert::communicate($receivers, $model_id, $msg);
+		$title = "Virtual Gages alert: ".strtoupper($level)." level by model '".$model_id;
+        MailSender::communicate($receivers, $title, $msg);
       }
     }
 
@@ -107,70 +97,37 @@
      * Reads web service and alerts if past data excedess thresholds
      * RETURN: none.
      */
-    private static function check_past($now_timestamp){
+    private static function check_past(){
       echo("# ### PAST #################################### #".PHP_EOL);
-      $past_peaks = WebServiceReader::get_past_peaks();
-      echo("Got heres.".PHP_EOL);
-      $dict_order = RealtimeFloodAlert::order_by_alert($past_peaks);
-      echo("Order by alert: got ".count(array_keys($dict_order))." keys.".PHP_EOL);
-      foreach($dict_order as $level => $all_ifis_id){
-        echo($level." -> ".json_encode($all_ifis_id).PHP_EOL);
-        
-        // 1- get receivers for this level
-        $receivers = RealtimeFloodAlert::get_contacted($level, NULL);
-        if(count($receivers) <= 0)
-          continue;
       
-        // 2- create message
-        $msg = RealtimeFloodAlert::create_message($level, 
-                                                  $past_peaks,
-                                                  $dict_order, 
-												  "past");
-        if(is_null($msg))
-          continue;
-        
-        // 3- send created message for all receivers
-        RealtimeFloodAlert::communicate($receivers, NULL, $msg);
-        
-        echo("Got here.".PHP_EOL);
+	  // get all past data for last 10 days and all potential contacts
+	  $ws_raw_data = WebServiceReader::retrieve_raw_data(NULL);
+	  $all_contacted = RealtimeFloodAlert::get_all_contacted_past();
+	  
+	  // define current timestamp
+	  $cur_timestamp = time();
+	  
+	  // 
+	  foreach($all_contacted as $flood_label => $time_receiver_dict){
+		foreach($time_receiver_dict as $past_time => $past_receivers){
+          // find sites fitting time and label constraints
+          $min_timestamp = $cur_timestamp - (intval($past_time) * 60 * 60);
+		  $exceed_sites = WebServiceReader::extract_exceeding_sites($ws_raw_data,
+		                                                            $flood_label,
+																	$min_timestamp,
+																	$cur_timestamp);
+          // define title, message and send e-mails if needed
+		  if(is_null($exceed_sites) || (count($exceed_sites) == 0)){
+            echo(" No sites exceeding level '".$flood_label."' in the last ".$past_time." hours.".PHP_EOL);
+            continue;
+          }
+          $title = "Virtual Gages flood report: '".$flood_label."' level in the past ".$past_time." hours";
+		  $msg = RealtimeFloodAlert::create_past_message($flood_label, 
+                                                         $past_time,
+                                                         $exceed_sites);
+          MailSender::communicate($past_receivers, $title, $msg);
+		}
       }
-    }
-
-    /**
-     * 
-     * $thresholds_dct:
-     * $model_id:
-     * RETURN: none.
-     */
-    private static function check_forecast($thresholds_dct, $model_id){
-      echo("# ### FORECAST : ".$model_id." ################ #".PHP_EOL);
-      $fore_peaks = WebServiceReader::get_forecast_peaks($model_id);
-      $dict_order = RealtimeFloodAlert::order_by_alert($fore_peaks);
-      foreach($dict_order as $level => $all_ifis_id){
-        echo($level." -> ".json_encode($all_ifis_id).PHP_EOL);
-        // 1- get receivers for this level
-        $receivers = RealtimeFloodAlert::get_contacted($level, $model_id);
-        if(count($receivers) <= 0)
-          continue;
-        
-        // 2- create message
-        $msg = RealtimeFloodAlert::create_message($level, 
-                                                  $fore_peaks,
-                                                  $dict_order,
-												  "fore");
-        if(is_null($msg))
-          continue;
-        
-        // 3- send created message for all receivers
-        RealtimeFloodAlert::communicate($receivers, $model_id, $msg);
-        
-        echo("Got here.".PHP_EOL);
-      }
-      
-      echo("Did ".$model_id.PHP_EOL);
-      
-      // echo(json_encode($fore_peaks, JSON_PRETTY_PRINT));
-      // RealtimeFloodAlert::evaluate_time($model_id, $f_t, $now_timestamp);
     }
 
     /**
@@ -226,79 +183,61 @@
       return(Settings::get("threshold_labels")[$value]);
     }
     
+	private static function get_all_contacted_past(){
+      return(SettingsAlertsFloods::get("alert_past"));
+	}
+		
     /**
      * 
      * $alert_level: Integer. Alert level.
      * $model_id: String. The model id if it is a forecast or NULL if it is for the past.
      * RETURN: Array of strings with the emails to be contacted.
      */
-    private static function get_contacted($alert_level, $model_id){
-      $ret_array = array();
+    private static function get_contacted_state_fore($alert_level, $model_id){
+      $alert_label = RealtimeFloodAlert::convert_threshold_value_to_label($alert_level);
+	  $temp_dict = SettingsAlertsFloods::get("alert_state_fore");
       
       try{
-        $temp_dict = SettingsAlertsFloods::get("alert_floods");
-        
-        if(!is_null($model_id)){
-          $temp_dict = $temp_dict["forecast"];
-          if(!array_key_exists($model_id, $temp_dict)){
-            echo("Not found: '".$model_id."' in ".json_encode($temp_dict).PHP_EOL);
-            return($ret_array);
-          }
-          $temp_dict = $temp_dict[$model_id];
-        } else {
-          $temp_dict = $temp_dict["state"];
-        }
-        
-        
-        $alert_label = RealtimeFloodAlert::convert_threshold_value_to_label($alert_level);
-        if(!array_key_exists($alert_label, $temp_dict)){
-          // echo("Not found: '".$alert_label."' in ".json_encode($temp_dict).PHP_EOL);
-          return($ret_array);
-        }
-        $ret_array = $temp_dict[$alert_label];
+        if(!array_key_exists($alert_label, $temp_dict[$model_id])) return(array());
+		$ret_array = $temp_dict[$model_id][$alert_label];
+		
+		print("Contacted for '".$alert_label."': ".json_encode($ret_array).PHP_EOL);
+		
       }catch(Exception $e){
         echo("Error: ".$e.PHP_EOL);
       }
       
       return($ret_array);
     }
-    
-    /**
-     * 
-     * $alert_level: 
-     * $fore_peaks: 
-     * $alert_groups:
-     * $time_flag: expects 'past' or 'fore'
-     * RETURN: 
-     */
-    private static function create_message($alert_level, 
-                                           $fore_peaks,
-                                           $alert_groups,
-										   $time_flag){
-      $ret_msg = "";
-      $counted = 0;
-	  
-	  $verb_exceed = ($time_flag == "past" ? "exceeded" : "will exceed");
-	  $verb_peak = ($time_flag == "past" ? "have peaked" : "will peak");
-      
-      $alert_label = RealtimeFloodAlert::convert_threshold_value_to_label($alert_level);
-      $ret_msg .= "Virtual gage sites that ".$verb_exceed." '".$alert_label."' level:\n";
-      foreach($alert_groups[$alert_level] as $fore_site){
-        $fore_site_desc = SitesDescriptionCSVReader::get_desc_of_ifis($fore_site);
-        $fore_peak = $fore_peaks[$fore_site];
-        $fore_peak_date = new DateTime();
-        $fore_peak_date->setTimestamp($fore_peak['timestamp']);
-        $fore_peak_date = $fore_peak_date->format('Y-m-d, H:i:s');
-        
-        $ret_msg .= "- ".$fore_site_desc.": ";
-        $ret_msg .= $verb_peak." at ".$fore_peak['water_elev']." ft";
-        $ret_msg .= " on ".$fore_peak_date.".\n";
-        $counted += 1;
-      }
 
-      return($counted > 0 ? $ret_msg : null);
+    /**
+	 *
+	 * $flood_label:
+	 * $past_time:
+	 * $exceed_sites:
+	 * RETURN:
+	 */
+    private static function create_past_message($flood_label, 
+                                                $past_time,
+                                                $exceed_sites){
+      $ret_msg = "Virtual gage sites exceeding '".strtoupper($flood_label)."' level in the last ".$past_time." hours.".PHP_EOL;
+	  
+      foreach($exceed_sites as $exceed_site){
+        $fore_site_desc = SitesDescriptionCSVReader::get_desc_of_ifis($exceed_site);
+		$ret_msg .= "- ".$fore_site_desc;
+		$ret_msg .= "(<a href='http://s-iihr50.iihr.uiowa.edu/ifis/sc/test1/virtualgages_webservice/dst/frontend/code/site/virtualgage_graph.html?forecast_id=fc254ifc01qpf&ifis_id=".$exceed_site."'>see</a>)";
+		$ret_msg .= PHP_EOL;
+      }
+	  
+	  return($ret_msg);
     }
-    
+
+	/**
+	 *
+	 * $alert_level:
+     * $state_fore_peaks:
+     * $alert_groups:
+	 */
     private static function create_state_fore_message(
         $alert_level, $state_fore_peaks, $alert_groups){
       $ret_msg = "";
@@ -321,6 +260,7 @@
         // build beginning of message line
         $ret_msg .= "- ".$fore_site_desc." now in ".strtoupper($s_flag_label)." ";
         
+		$show_link = true;
         if($s_flag_value < $f_flag_value){
           // case 1: an alert will come
           $fore_peak_date = new DateTime();
@@ -338,72 +278,20 @@
           $ret_msg .= "and will peak at ".$fore_peak_date.", but keeping as ".strtoupper($f_flag_label);
         } else {
           $ret_msg .= "(no description available)".PHP_EOL;
+		  $show_link = false;
           continue;
-        } 
+        }
+		if($show_link){
+          $ret_msg .= "(<a href='http://s-iihr50.iihr.uiowa.edu/ifis/sc/test1/virtualgages_webservice/dst/frontend/code/site/virtualgage_graph.html?forecast_id=fc254ifc01qpf&ifis_id=".$fore_site."'>see</a>)";
+		}
         $ret_msg .= ".".PHP_EOL;
         $counted += 1;
       }
 
-      echo($ret_msg);
+      // echo($ret_msg);
       return($counted > 0 ? $ret_msg : null);
     }
 
-    /**
-     * Submits e-mails with given messages to certain addresses.
-     * $receivers: Arrays of Strings. All emails addresses to receive a msg.
-     * $model_id: String. Id of the model that triggered the email call.
-     * $message: String. Raw content to be sent. Should not have HTML.
-     * RETURN: Boolean. True if email was sent, False otherwise.
-     */    
-    private static function communicate($receivers, $model_id, $message){
-      
-      # get definitions
-      $from_host = SettingsAlertsFloods::get("smtp_host");
-      $from_port = SettingsAlertsFloods::get("smtp_port");
-      $from_mail = SettingsAlertsFloods::get("smtp_from_mail");
-      $from_pass = SettingsAlertsFloods::get("smtp_from_pass");
-      $from_name = SettingsAlertsFloods::get("smtp_from_name");
-      
-      # define title
-      if (is_null($model_id))
-        $title = "Virtual Gages flood alert: past";
-      else
-        $title = "Virtual Gages flood alert: model ".$model_id;
-      
-      foreach($receivers as $receiver){
-        $mail = new PHPMailer(true);
-        try {
-          //Server settings
-          $mail->SMTPDebug = 0;
-          $mail->isSMTP();
-          $mail->Host = $from_host;
-          $mail->SMTPAuth = true;
-          $mail->Username = $from_mail;
-          $mail->Password = $from_pass;
-          $mail->SMTPSecure = 'tls';
-          $mail->Port = intval($from_port);
-
-          //Recipient
-          $mail->setFrom($from_mail, $from_name);
-          $mail->addAddress($receiver);
-          $mail->addReplyTo($from_mail, $from_name);
-
-          //Content
-          $mail->isHTML(true);
-          $mail->Subject = $title;
-          $mail->Body = nl2br($message);
-          $mail->AltBody = $message;
-
-          $mail->send();
-          echo("Sent mail to ".$receiver.PHP_EOL);
-          return(true);
-        } catch (Exception $e) {
-          echo 'Message could not be sent. Mailer Error: ', $mail->ErrorInfo;
-          return(false);
-        }
-      }
-      return;
-    }
   }
   
 ?>

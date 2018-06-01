@@ -97,7 +97,12 @@
      * $model_id: Model id of the forecast. If null, return only state.
      * RETURN: String.
      */
-    private function retrieve_raw_data($arg){
+    public function retrieve_raw_data($arg){
+      // load data
+      if(is_null(WebServiceReader::$url_state))
+        WebServiceReader::read_settings();
+	
+      // build URL
       if(is_null($arg))
         $url = WebServiceReader::$url_state;
       elseif(is_string($arg))
@@ -106,10 +111,73 @@
         $url = WebServiceReader::$url_state."?";
         $url .= http_build_query($arg);
       }
+	  
+	  // call
       echo("Acessing:".$url.PHP_EOL);
       return(file_get_contents($url));
     }
-    
+
+    /**
+	 *
+	 * $raw_data: 
+	 * $flood_label: 
+	 * $min_timestamp: 
+	 * $max_timestamp: 
+	 * RETURN: 
+	 */
+	public function extract_exceeding_sites($ws_raw_data, 
+	                                        $flood_label,
+											$min_timestamp,
+											$max_timestamp){
+      $ret_list = array();
+      
+      // split it and basic check
+      $all_lines = WebServiceReader::split_ws_raw_data($ws_raw_data);
+      if(is_null($all_lines)) return(null);
+      
+      // extract column
+      $all_timestamps = array();
+      $div = WebServiceReader::$column_div;
+      $i_idx = WebServiceReader::$ifis_id_idx;
+      $t_idx = WebServiceReader::$timestamp_idx;
+      $e_idx = WebServiceReader::$water_elev_idx;
+      $d_idx = WebServiceReader::$discharge_idx;
+      $a_idx = WebServiceReader::$alert_idx;
+      $f_idx = WebServiceReader::$flag_idx;
+      $header = true;
+      
+      foreach($all_lines as $cur_csv_line){
+        // split line and ignore header
+        $split_line = explode($div, $cur_csv_line);
+        if(count($split_line) < ($a_idx+1)) continue;
+        if($header){
+          $header = false;
+          continue;
+        }
+        
+		// read each element
+        $cur_ifis_id = intval($split_line[$i_idx]);
+        $cur_timestamp = intval($split_line[$t_idx]);
+        $cur_water_elv = floatval($split_line[$e_idx]);
+        $cur_discharge = floatval($split_line[$d_idx]);
+        $cur_alert = trim(str_replace("'", "", $split_line[$a_idx]));
+        $cur_flag = trim(str_replace("'", "", $split_line[$f_idx]));
+
+        // ignore bad timestamps and already inserted elements
+        if(!is_numeric($cur_timestamp)) continue;
+        if(in_array($cur_ifis_id, $ret_list)) continue;
+
+	    // check if it is constraints
+        if(($cur_timestamp >= $min_timestamp) && 
+		   ($cur_timestamp <= $max_timestamp) && 
+		   ($cur_alert == $flood_label)){
+          array_push($ret_list, $cur_ifis_id);
+		}
+      }
+	  
+	  return($ret_list);
+    }
+	
    /**
     * 
     * $ws_raw_data: String.

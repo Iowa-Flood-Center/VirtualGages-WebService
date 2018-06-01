@@ -8,7 +8,9 @@ The main interface between the final user and the data. It provides a CSV-like o
 
 ### Usage
 
-Just access the page through a web browser and provide the optional arguments as needed in the URL by GET. The optional arguments are described as follows.
+Just access the page through a web browser and provide the optional arguments as needed in the URL by GET. 
+
+The optional arguments are described as follows.
 
 - **forecast\_id**
   - Description: The model id for the forecast
@@ -50,3 +52,26 @@ Just access the page through a web browser and provide the optional arguments as
   - In absence: Assumes "the\_glue"
   - Format: String. Expects only "the\_truth" | "the\_glue"
   - Example: *http://.../virtualgages_ws.php?show\_me=the\_truth*
+
+## virtualgage\_thresholds\_ws.php
+
+A simple web service for providing access to the values of the thresholds associated to the available virtual gages in JSON format.
+
+### Usage
+
+The user can request the data for all points (what would return a list of JSON objects) or only for one point (which returns a single JSON object if found, or an empty list otherwise).
+
+- **all sites**
+  - URL call: *http://.../ virtualgage\_thresholds\_ws.php*
+- **one site**
+  - URL call: *http://.../ virtualgage\_thresholds\_ws.php?ifis_id=<INTEGER\>*
+
+## virtualgage\_graph.html
+
+Over simplistic page that just plots the content of a call to the *virtualgages\_ws.php* service using GoogleAnnotation Charts.
+
+### Usage
+
+It requires an HTTP GET request containing the arguments *forecast\_id* and *ifis\_id*.
+
+Example: *http://.../virtualgage\_graph.html?forecast\_id=fc254ifc01qpf&ifis_id=2014*

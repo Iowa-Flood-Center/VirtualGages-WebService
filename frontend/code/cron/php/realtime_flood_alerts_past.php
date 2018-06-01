@@ -2,7 +2,7 @@
 
   require_once("libs/RealtimeFloodAlert.php");
   
-  RealtimeFloodAlert::check_all_models_past_fore();
+  RealtimeFloodAlert::alert_past_floods();
 
   echo("# ### DONE ######################################## #".PHP_EOL);
   exit(0);

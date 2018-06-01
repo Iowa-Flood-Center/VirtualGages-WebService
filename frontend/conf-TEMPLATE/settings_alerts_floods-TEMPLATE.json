@@ -1,17 +1,18 @@
 {
-        "alert_floods":{
-		        "forecast":{
-				    "":{
-					         "Flood":[""],
-						  "Moderate":[""],
-						     "Major":[""]}},
-				"state":{
-				    "Flood":[],
-					"Moderate":[]}},
-           "smtp_host":"smtp.(...).com",
-           "smtp_port":"",
-         "server_name":"",
-      "smtp_from_mail":"",
-      "smtp_from_name":"",
-      "smtp_from_pass":""
+  "alert_past":{
+    "Flood":{
+	  "24":["(...)@(...).com"],
+	  "12":["(...)@(...).com", "(...)@(...).org"]},
+	"Major":{
+	 "12":["(...)@(...).com", "(...)@(...).org"]}},
+  "alert_state_fore":{
+    "forecast_model_id":{
+	  "Moderate":["(...)@(...).com", "(...)@(...).org"]
+  }},
+  "smtp_host":"smtp.(...).com",
+  "smtp_port":"",
+  "server_name":"",
+  "smtp_from_mail":"",
+  "smtp_from_name":"",
+  "smtp_from_pass":""
 }
