@@ -21,7 +21,7 @@
       $thresholds_dct = RealtimeFloodAlert::load_thresholds();
       
       // check current state
-      RealtimeFloodAlert::check_past($thresholds_dct);
+      RealtimeFloodAlert::check_past();
     }
 
     /**
@@ -81,14 +81,15 @@
       
         // 2- create message
         $msg = RealtimeFloodAlert::create_state_fore_message(
-          $level, $state_fore_peaks, $dict_order);
+          $level, $state_fore_peaks, $dict_order, $model_id);
         
         // 3 - check if there is something to be reported
         if(is_null($msg))
           continue;
       
         // 4- send created message for all receivers
-		$title = "Virtual Gages alert: ".strtoupper($level)." level by model '".$model_id;
+		$label = RealtimeFloodAlert::convert_threshold_value_to_label($level);
+		$title = "Virtual Gages alert: ".strtoupper($label)." level by model '".$model_id;
         MailSender::communicate($receivers, $title, $msg);
       }
     }
@@ -220,12 +221,22 @@
     private static function create_past_message($flood_label, 
                                                 $past_time,
                                                 $exceed_sites){
+      $url_base = SettingsAlertsFloods::get("hydrograph_url_base");
+      $url_args = SettingsAlertsFloods::get("hydrograph_url_args");
+      $fore_model_id = SettingsAlertsFloods::get("alert_past_forecast_model_id");
+
       $ret_msg = "Virtual gage sites exceeding '".strtoupper($flood_label)."' level in the last ".$past_time." hours.".PHP_EOL;
 	  
       foreach($exceed_sites as $exceed_site){
         $fore_site_desc = SitesDescriptionCSVReader::get_desc_of_ifis($exceed_site);
 		$ret_msg .= "- ".$fore_site_desc;
-		$ret_msg .= "(<a href='http://s-iihr50.iihr.uiowa.edu/ifis/sc/test1/virtualgages_webservice/dst/frontend/code/site/virtualgage_graph.html?forecast_id=fc254ifc01qpf&ifis_id=".$exceed_site."'>see</a>)";
+		
+		// build url and link
+        $link_url = $url_base;
+        $link_url .= "?".$url_args["model_forecast_id"]."=".$fore_model_id;
+        $link_url .= "&".$url_args["ifis_id"]."=".$exceed_site;
+        $ret_msg .= "(<a href='".$link_url."'>see</a>)";
+		
 		$ret_msg .= PHP_EOL;
       }
 	  
@@ -237,14 +248,20 @@
 	 * $alert_level:
      * $state_fore_peaks:
      * $alert_groups:
+     * $fore_model_id:
+     * RETURN: Integer.
 	 */
     private static function create_state_fore_message(
-        $alert_level, $state_fore_peaks, $alert_groups){
+        $alert_level, $state_fore_peaks, $alert_groups, $fore_model_id){
       $ret_msg = "";
       $counted = 0;
       
       $alert_label = RealtimeFloodAlert::convert_threshold_value_to_label($alert_level);
       $ret_msg .= "Virtual gage sites exceeding '".strtoupper($alert_label)."' level:".PHP_EOL;
+      
+      $url_base = SettingsAlertsFloods::get("hydrograph_url_base");
+      $url_args = SettingsAlertsFloods::get("hydrograph_url_args");
+
       foreach($alert_groups[$alert_level] as $fore_site){
         // get all the info
         $fore_site_desc = SitesDescriptionCSVReader::get_desc_of_ifis($fore_site);
@@ -282,7 +299,12 @@
           continue;
         }
 		if($show_link){
-          $ret_msg .= "(<a href='http://s-iihr50.iihr.uiowa.edu/ifis/sc/test1/virtualgages_webservice/dst/frontend/code/site/virtualgage_graph.html?forecast_id=fc254ifc01qpf&ifis_id=".$fore_site."'>see</a>)";
+          
+          $link_url = $url_base;
+          $link_url .= "?".$url_args["model_forecast_id"]."=".$fore_model_id;
+          $link_url .= "&".$url_args["ifis_id"]."=".$fore_site;
+          
+          $ret_msg .= "(<a href='".$link_url."'>see</a>)";
 		}
         $ret_msg .= ".".PHP_EOL;
         $counted += 1;

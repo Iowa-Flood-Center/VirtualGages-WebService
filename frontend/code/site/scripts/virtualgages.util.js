@@ -54,7 +54,7 @@ var virtualgages = virtualgages || {};
 	ws_url = vgu.BASE_URL;
     ws_url += "virtualgages_ws.php";
 	ws_url += "?ifis_id="+cur_args.ifis_id;
-	ws_url += "&forecast_id=fc254ifc01qpf";
+	ws_url += "&forecast_id="+cur_args.forecast_id;
 	ws_url += "&show_me=the_truth";
 	
 	// ajax call

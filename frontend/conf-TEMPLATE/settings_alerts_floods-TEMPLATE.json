@@ -1,10 +1,15 @@
 {
+  "hydrograph_url_base":"http://(...).html",
+  "hydrograph_url_args":{
+    "model_forecast_id":"...",
+    "ifis_id":"..."},
   "alert_past":{
     "Flood":{
 	  "24":["(...)@(...).com"],
 	  "12":["(...)@(...).com", "(...)@(...).org"]},
 	"Major":{
 	 "12":["(...)@(...).com", "(...)@(...).org"]}},
+  "alert_past_forecast_model_id":"", 
   "alert_state_fore":{
     "forecast_model_id":{
 	  "Moderate":["(...)@(...).com", "(...)@(...).org"]
