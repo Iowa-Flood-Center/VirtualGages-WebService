@@ -16,6 +16,12 @@ LOG_FILENAME_ERR_NOW="generate_realtime_data_e.txt"
 LOG_FILENAME_ERR_LAST="generate_realtime_data_e_last.txt"
 SH_FILENAME="generate_data.sh"
 
+# basic check - settings file must exist
+if [ ! -f ${CFG_FILE} ]; then
+  echo "Settings file not found. Aborting."
+  exit 0
+fi
+
 # static folder paths
 SRC_FOLDER=$(dirname "$0")'/bash/'
 LOC_RAW_FOLDER=$(${JQ} -r '.raw_data_folder_path' ${CFG_FILE})
@@ -53,10 +59,4 @@ fi
 
 ### RUN DATA GENERATOR #############
 
-# call script - realtime state
-echo "Calling "${SH_FILEPATH}
-bash $SH_FILEPATH 1> $LOG_FILEPATH_STD_NOW 2> $LOG_FILEPATH_ERR_NOW 
-
-####################################
-
-echo "Done."
+bash $SH_FILEPATH 1> $LOG_FILEPATH_STD_NOW 2> $LOG_FILEPATH_ERR_NOW

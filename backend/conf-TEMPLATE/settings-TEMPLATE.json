@@ -17,7 +17,8 @@
            "observed_stages_webservice_div":"|",
   "observed_stages_webservice_ifisid_index":-1,
    "observed_stages_webservice_stage_index":-1,
-              "server_realtime_folder_path":"",
-              "server_forecast_folder_path":"",
-                           "server_address": "...@..."
+                      "distribution_method":{
+                                   "scp_push":{ "server_realtime_folder_path":"/.../",
+                                                "server_forecast_folder_path":"/.../",
+                                                             "server_address":"(...)@(...)"}}
 }

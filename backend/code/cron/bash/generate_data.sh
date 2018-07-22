@@ -13,9 +13,6 @@ CFG_FILE="../../../conf/settings.json"
 PYTHON_FOLDER='../python/'
 LOC_RAW_FOLDER=$(${JQ} -r '.raw_data_folder_path' ${CFG_FILE})
 LOCAL_DATA_FOLDER=${LOC_RAW_FOLDER}"data/"
-SERVER_LOCATION=$(${JQ} -r '.server_address' ${CFG_FILE})
-SRV_REALTIME_FOLDER=$(${JQ} -r '.server_realtime_folder_path' ${CFG_FILE})
-SRV_FORECAST_FOLDER=$(${JQ} -r '.server_forecast_folder_path' ${CFG_FILE})
 
 # get forecast models ids
 FRT_MODELS_IDS_RAW=$(${JQ} '.model_forecasts_file_modelids' ${CFG_FILE})
@@ -23,7 +20,46 @@ FRT_MODELS_IDS=$(echo $FRT_MODELS_IDS_RAW | ${JQ} -r '.[]')
 
 LOCAL_DATA_FILES_SUFFIX=$(${JQ} -r '.local_files_suffix' ${CFG_FILE})
 
-# TODO - keep the following definitions here
+# basic check
+# chaos ON
+
+DISTRIBUTION_METHOD=$(${JQ} -r '.distribution_method' ${CFG_FILE})
+if [ "$DISTRIBUTION_METHOD" = "null" ]; then
+  echo "No 'distribution_method' on settings file. No distribution."
+else
+
+  # check if should push into server for distributing
+  DISTR_SCP_PUSH=$(${JQ} -r '.distribution_method.scp_push' ${CFG_FILE})
+  if [ "$DISTR_SCP_PUSH" != "null" ]; then
+    # get
+    ATTR='.distribution_method.scp_push.server_realtime_folder_path'
+    SRV_REALTIME_FOLDER=$(${JQ} -r ${ATTR} ${CFG_FILE})
+    ATTR='.distribution_method.scp_push.server_forecast_folder_path'
+    SRV_FORECAST_FOLDER=$(${JQ} -r ${ATTR} ${CFG_FILE})
+    ATTR='.distribution_method.scp_push.server_address'
+    SERVER_LOCATION=$(${JQ} -r ${ATTR} ${CFG_FILE})
+    # check
+    if [ "$SRV_REALTIME_FOLDER" = "null" ]; then
+      echo "Server realtime folder missing in settings file. No push."
+      DISTR_SCP_PUSH="null"
+    elif [ "$SRV_FORECAST_FOLDER" = "null" ]; then
+      echo "Server forecast folder missing in settings file. No push."
+      DISTR_SCP_PUSH="null"
+    elif [ "$SERVER_LOCATION" = "null" ]; then
+      echo "Server location missing in settings file. No push."
+      DISTR_SCP_PUSH="null"
+    fi
+  fi
+  
+  # check if there is at least one distribution method
+  if [ "$DISTR_SCP_PUSH" = "null" ]; then
+    echo "No ditribution procedure set up."
+  fi
+fi
+
+# chaos OFF
+
+# keep the following definitions here
 LOCAL_REALTIME_CALL="python json_state_generator.py"
 LOCAL_FORECAST_CALL="python json_forecast_generator.py"
 
@@ -58,10 +94,13 @@ do
 done
 
 ## copy only the most recent file
-COPY_FILE=${LOCAL_DATA_REALTIME_FOLDER}${MAX_TIMESTAMP}${LOCAL_DATA_FILES_SUFFIX}
-echo "Sending '"$COPY_FILE"'..."
-echo "  ...to '"$SERVER_LOCATION":"$SRV_REALTIME_FOLDER"'."
-scp $COPY_FILE $SERVER_LOCATION:$SRV_REALTIME_FOLDER
+if [ "$DISTR_SCP_PUSH" != "null" ] ; then
+  COPY_FILE=${LOCAL_DATA_REALTIME_FOLDER}
+  COPY_FILE=${COPY_FILE}${MAX_TIMESTAMP}${LOCAL_DATA_FILES_SUFFIX}
+  echo "Sending '"$COPY_FILE"'..."
+  echo "  ...to '"$SERVER_LOCATION":"$SRV_REALTIME_FOLDER"'."
+  scp $COPY_FILE $SERVER_LOCATION:$SRV_REALTIME_FOLDER
+fi
 
 ### generate forecasts and upload them
 
@@ -78,10 +117,13 @@ do
   $NEXT_CALL
 
   # upload
-  COPY_FILE=$LOCAL_DATA_FORECAST_FOLDER""$cur_model_id""$LOCAL_DATA_FILES_SUFFIX
-  echo "Sending '"$COPY_FILE"'..."
-  echo "  ...to '"$SERVER_LOCATION":"$SRV_FORECAST_FOLDER"'."
-  scp $COPY_FILE $SERVER_LOCATION:$SRV_FORECAST_FOLDER
+  if [ "$DISTR_SCP_PUSH" != "null" ] ; then
+    COPY_FILE=${LOCAL_DATA_FORECAST_FOLDER}
+    COPY_FILE=${COPY_FILE}${cur_model_id}${LOCAL_DATA_FILES_SUFFIX}
+    echo "Sending '"$COPY_FILE"'..."
+    echo "  ...to '"$SERVER_LOCATION":"$SRV_FORECAST_FOLDER"'."
+    scp $COPY_FILE $SERVER_LOCATION:$SRV_FORECAST_FOLDER
+  fi
 done
 
 echo ""
