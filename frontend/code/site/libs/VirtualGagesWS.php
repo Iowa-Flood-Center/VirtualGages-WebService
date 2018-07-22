@@ -1,5 +1,7 @@
 <?php
 
+  require_once("DataAccess.php");
+
   class VirtualGagesWS{
     
 	
@@ -63,9 +65,9 @@
 	 *
 	 * RETURN : Array with integer timestamps
 	 */
-	public static function get_all_available_state_timestamps($realtime_folder_path){
+	public static function get_all_available_state_timestamps(){
 		$return_array = array();
-		$all_files_in_folder = scandir($realtime_folder_path);
+		$all_files_in_folder = DataAccess::list_realtime_folder_content(".json");
 		foreach ($all_files_in_folder as $cur_file_path){
 			$splitted_file_name = explode("_", basename($cur_file_path));
 			if(is_numeric($splitted_file_name[0])){

@@ -10,6 +10,7 @@
   require_once("libs/Settings.php");
   require_once("libs/WSDefinitions.php");
   require_once("libs/VirtualGagesWS.php");
+  require_once("libs/DataAccess.php");
   
 
   // define time constrains
@@ -37,13 +38,12 @@
   echo("\n");
   
   // define paths
-  $forecast_folder_path = Settings::get("input_folder_path")."forecast_last/";
-  $realtime_folder_path = Settings::get("input_folder_path")."realtime_history/";
   $thresholds_file_path = Settings::get("raw_data_folder_path")."/anci/dot_floodthresholds.json";
+  $thresholds_dict = json_decode(file_get_contents($thresholds_file_path), true);
 
   // show last 10 days
   if($only_forecast != 'yes'){
-    $all_timestamps = VirtualGagesWS::get_all_available_state_timestamps($realtime_folder_path);
+    $all_timestamps = VirtualGagesWS::get_all_available_state_timestamps();
     foreach($all_timestamps as $cur_timestamp){
       
       // check if timestamp is in the constraint
@@ -51,14 +51,12 @@
         continue;
       }
       
-      $realtime_file_path = $realtime_folder_path;
-      $realtime_file_path .= $cur_timestamp;
-      $realtime_file_path .= WSDefinitions::JSON_FILE_SUFIX;
+      $realtime_file_name = $cur_timestamp;
+      $realtime_file_name .= WSDefinitions::JSON_FILE_SUFIX;
       
-      
-      // read files
-      $realtime_dict = json_decode(file_get_contents($realtime_file_path), true);
-      $thresholds_dict = json_decode(file_get_contents($thresholds_file_path), true);
+      // read file
+      $realtime_dict = DataAccess::get_realtime_file_content($realtime_file_name);
+      $realtime_dict = json_decode($realtime_dict, true);
       
       $flag_added = false;
       foreach($realtime_dict as $cur_ifis_id => $cur_pair){
@@ -142,16 +140,16 @@
 
   // show forecast
   if(!is_null($forecast)){
-    // basic check for file existence
-    $forecast_file_path = $forecast_folder_path;
-    $forecast_file_path .= $forecast.WSDefinitions::JSON_FILE_SUFIX;
     $thresholds_dict = file_get_contents($thresholds_file_path);
     $thresholds_dict = json_decode($thresholds_dict, true);
+    
+    // basic check for file existence
+    $forecast_file_name = $forecast.WSDefinitions::JSON_FILE_SUFIX;
 	
-    if(file_exists($forecast_file_path)){
-      $realtime_dict = file_get_contents($forecast_file_path);
-      $realtime_dict = json_decode($realtime_dict, true);
-      foreach($realtime_dict as $cur_ifis_id => $cur_vector){
+    if(DataAccess::check_forecast_file_exists($forecast_file_name)){
+      $forecast_dict = DataAccess::get_forecast_file_content($forecast_file_name);
+      $forecast_dict = json_decode($forecast_dict, true);
+      foreach($forecast_dict as $cur_ifis_id => $cur_vector){
         
 		
         // check if exclusive link id
