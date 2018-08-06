@@ -36,7 +36,7 @@ var virtualgages = virtualgages || {};
     var ws_url, cur_args;
 	cur_args = vgu.get_all_url_params();
 	ws_url = vgu.BASE_URL;
-    ws_url += "virtualgages_thresholds_ws.php";
+    ws_url += "thresholds.php";
 	ws_url += "?ifis_id="+cur_args.ifis_id;
 	
 	// ajax call
@@ -52,7 +52,7 @@ var virtualgages = virtualgages || {};
     var ws_url, cur_args;
 	cur_args = vgu.get_all_url_params();
 	ws_url = vgu.BASE_URL;
-    ws_url += "virtualgages_ws.php";
+    ws_url += "summary.php";
 	ws_url += "?ifis_id="+cur_args.ifis_id;
 	ws_url += "&forecast_id="+cur_args.forecast_id;
 	ws_url += "&show_me=the_truth";
